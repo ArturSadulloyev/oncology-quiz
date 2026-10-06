@@ -1,0 +1,54 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --app-bg: #F2F2F7;
+  --app-card: #FFFFFF;
+  --app-text: #1C1C1E;
+  --app-muted: #8E8E93;
+  --app-blue: #007AFF;
+  --app-green: #34C759;
+  --app-red: #FF3B30;
+}
+
+html,
+body {
+  margin: 0;
+  padding: 0;
+  background-color: var(--app-bg);
+  color: var(--app-text);
+  font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text", "Segoe UI", Roboto, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  -webkit-tap-highlight-color: transparent;
+  user-select: none;
+  -webkit-touch-callout: none;
+  min-height: 100vh;
+  min-height: 100dvh;
+}
+
+/* iOS Safe Areas */
+.pb-safe {
+  padding-bottom: calc(env(safe-area-inset-bottom, 0px) + 72px);
+}
+
+.pt-safe {
+  padding-top: env(safe-area-inset-top, 0px);
+}
+
+/* Smooth transitions */
+.transition-press {
+  transition: transform 0.1s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.1s ease;
+}
+
+.transition-press:active {
+  transform: scale(0.975);
+  opacity: 0.85;
+}
+
+/* Custom scrollbars */
+::-webkit-scrollbar {
+  width: 0px;
+  background: transparent;
+}
