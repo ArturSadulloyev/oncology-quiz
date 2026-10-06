@@ -4,9 +4,6 @@
 
 const TELEGRAM_API_BASE = 'https://api.telegram.org';
 
-export const DEPLOYED_APP_URL =
-  process.env.NEXT_PUBLIC_APP_URL || 'https://oncology-quiz.vercel.app';
-
 export interface TelegramUpdate {
   update_id: number;
   message?: {
@@ -43,23 +40,27 @@ export function verifyWebhookSecret(headerSecret: string | null): boolean {
 }
 
 /**
- * Build the /start welcome message and official Web App launch button
+ * Returns the resolved Mini App URL from environment variables
+ */
+export function getMiniAppUrl(): string {
+  return process.env.NEXT_PUBLIC_APP_URL || 'https://oncology-quiz.vercel.app';
+}
+
+/**
+ * Build the /start welcome message and official inline Web App launch button
  */
 export function buildStartMessage(firstName?: string): {
   text: string;
-  replyMarkup: Record<string, any>;
+  replyMarkup: {
+    inline_keyboard: Array<Array<{ text: string; web_app: { url: string } }>>;
+  };
 } {
   const greeting = firstName ? `👋 Xush kelibsiz, ${firstName}!` : '👋 Xush kelibsiz!';
+  const appUrl = getMiniAppUrl();
 
   const text = `${greeting}
 
-Onkologiya boʻyicha test savollarini ishlab, bilimlaringizni mustahkamlang.
-
-📚 <b>Savollar bazasi:</b> 498 ta tibbiy imtihon savoli
-🧠 <b>Spaced Repetition:</b> Zaif mavzularni avtomatik takrorlash
-📊 <b>Tahlil:</b> Shaxsiy aniqlik darajasi va xatolar bilan ishlash
-
-Testni boshlash uchun quyidagi tugmani bosing:`;
+Onkologiya bo‘yicha test savollarini ishlab, bilimlaringizni mustahkamlang.`;
 
   const replyMarkup = {
     inline_keyboard: [
@@ -67,7 +68,7 @@ Testni boshlash uchun quyidagi tugmani bosing:`;
         {
           text: '🧠 Testni boshlash',
           web_app: {
-            url: DEPLOYED_APP_URL,
+            url: appUrl,
           },
         },
       ],
@@ -78,13 +79,19 @@ Testni boshlash uchun quyidagi tugmani bosing:`;
 }
 
 /**
- * Build generic fallback message for other commands/messages
+ * Build generic fallback message for other chat messages
  */
 export function buildDefaultMessage(): {
   text: string;
-  replyMarkup: Record<string, any>;
+  replyMarkup: {
+    inline_keyboard: Array<Array<{ text: string; web_app: { url: string } }>>;
+  };
 } {
-  const text = `Onkologiya testlarini yechish va bilimlaringizni sinash uchun <b>"🧠 Testni boshlash"</b> tugmasini bosing yoki chat menyusidan foydalaning.`;
+  const appUrl = getMiniAppUrl();
+
+  const text = `👋 Xush kelibsiz!
+
+Onkologiya bo‘yicha test savollarini ishlab, bilimlaringizni mustahkamlang.`;
 
   const replyMarkup = {
     inline_keyboard: [
@@ -92,7 +99,7 @@ export function buildDefaultMessage(): {
         {
           text: '🧠 Testni boshlash',
           web_app: {
-            url: DEPLOYED_APP_URL,
+            url: appUrl,
           },
         },
       ],
@@ -123,7 +130,6 @@ export async function sendTelegramMessage(
   const payload: Record<string, any> = {
     chat_id: chatId,
     text,
-    parse_mode: 'HTML',
   };
 
   if (replyMarkup) {
@@ -139,7 +145,7 @@ export async function sendTelegramMessage(
       body: JSON.stringify(payload),
     });
 
-    const data = await res.json();
+    const data = await res.json().catch(() => ({}));
     if (!res.ok || !data.ok) {
       console.error(
         `[TelegramBot] Telegram API error: status=${res.status}, desc=${data.description || 'unknown'}`
