@@ -28,15 +28,30 @@ export interface TelegramUpdate {
 }
 
 /**
- * Verify secret token sent by Telegram via x-telegram-bot-api-secret-token header
+ * Verify secret token sent by Telegram via x-telegram-bot-api-secret-token header.
+ * Robust against surrounding whitespace or quotes in environment variables.
  */
-export function verifyWebhookSecret(headerSecret: string | null): boolean {
+export function verifyWebhookSecret(headerSecret: string | null | undefined): boolean {
   const configuredSecret = process.env.TELEGRAM_WEBHOOK_SECRET;
   if (!configuredSecret) {
     // If no secret configured, allow request (standard mode)
     return true;
   }
-  return headerSecret === configuredSecret;
+
+  if (!headerSecret) {
+    return false;
+  }
+
+  const cleanHeader = headerSecret.trim();
+  const cleanConfigured = configuredSecret.trim();
+  const unquotedConfigured = cleanConfigured.replace(/^["']|["']$/g, '');
+  const unquotedHeader = cleanHeader.replace(/^["']|["']$/g, '');
+
+  return (
+    cleanHeader === cleanConfigured ||
+    cleanHeader === unquotedConfigured ||
+    unquotedHeader === unquotedConfigured
+  );
 }
 
 /**

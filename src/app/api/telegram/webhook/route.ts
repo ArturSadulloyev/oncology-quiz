@@ -13,9 +13,11 @@ export const dynamic = 'force-dynamic';
  * GET healthcheck for checking endpoint availability
  */
 export async function GET() {
+  const hasSecret = Boolean(process.env.TELEGRAM_WEBHOOK_SECRET);
   return NextResponse.json({
     status: 'ok',
     service: 'Oncology Quiz Telegram Webhook',
+    authConfigured: hasSecret,
     timestamp: new Date().toISOString(),
   });
 }
@@ -25,11 +27,41 @@ export async function GET() {
  */
 export async function POST(req: NextRequest) {
   try {
-    // 1. Verify Telegram secret token header if configured
-    const secretHeader = req.headers.get('x-telegram-bot-api-secret-token');
-    if (!verifyWebhookSecret(secretHeader)) {
-      console.warn('[TelegramWebhook] Rejected unauthorized request: invalid secret token header.');
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    // 1. Read secret token header (case-insensitive via standard Web API)
+    const receivedSecret =
+      req.headers.get('x-telegram-bot-api-secret-token') ||
+      req.headers.get('X-Telegram-Bot-Api-Secret-Token');
+
+    const expectedSecret = process.env.TELEGRAM_WEBHOOK_SECRET;
+
+    // Safe boolean diagnostics (NEVER logs secret values)
+    const hasExpected = Boolean(expectedSecret);
+    const hasReceived = Boolean(receivedSecret);
+    const isMatch = verifyWebhookSecret(receivedSecret);
+
+    console.log('[TelegramWebhook] Auth diagnostics:', {
+      hasExpectedSecret: hasExpected,
+      hasReceivedSecretHeader: hasReceived,
+      isSecretMatch: isMatch,
+    });
+
+    if (hasExpected && !isMatch) {
+      console.warn('[TelegramWebhook] Unauthorized: secret token header mismatch', {
+        hasExpectedSecret: hasExpected,
+        hasReceivedSecretHeader: hasReceived,
+        isSecretMatch: false,
+      });
+
+      return NextResponse.json(
+        {
+          error: 'Unauthorized',
+          diagnostics: {
+            hasExpectedSecret: hasExpected,
+            hasReceivedSecretHeader: hasReceived,
+          },
+        },
+        { status: 401 }
+      );
     }
 
     // 2. Parse update body
